@@ -1,0 +1,111 @@
+@startuml SequenceDiagram
+
+actor "Student" as Student
+participant "WebUI" as UI
+participant "REST Controller" as REST
+participant "User Service" as UserService
+participant "Matching Service" as MatchingService
+participant "Group Repository" as GroupRepo
+participant "WebSocket Handler" as WebSocket
+database "Database" as DB
+
+Student -> UI : Request group match
+activate UI
+
+UI -> REST : POST /api/groups/match\n{userId, preferences}
+activate REST
+
+REST -> UserService : getUserProfile(userId)
+activate UserService
+
+UserService -> DB : SELECT user data
+activate DB
+DB --> UserService : user profile
+deactivate DB
+
+UserService --> REST : UserProfile
+deactivate UserService
+
+REST -> MatchingService : findBestMatch(user, preferences)
+activate MatchingService
+
+MatchingService -> GroupRepo : getAvailableGroups(criteria)
+activate GroupRepo
+
+GroupRepo -> DB : SELECT groups\nWHERE active = true
+activate DB
+DB --> GroupRepo : available groups
+deactivate DB
+
+GroupRepo --> MatchingService : List
+deactivate GroupRepo
+
+MatchingService -> MatchingService : calculateCompatibility()\nfor each group
+
+alt Match Found
+  MatchingService --> REST : Matched StudyGroup
+  deactivate MatchingService
+  
+  REST -> GroupRepo : addMemberToGroup(groupId, userId)
+  activate GroupRepo
+  
+  GroupRepo -> DB : INSERT INTO group_members
+  activate DB
+  DB --> GroupRepo : success
+  deactivate DB
+  
+  GroupRepo --> REST : Member added
+  deactivate GroupRepo
+  
+  REST -> WebSocket : notifyGroupMembers(groupId, newMember)
+  activate WebSocket
+  
+  WebSocket -> UI : WebSocket message:\n"New member joined"
+  
+  WebSocket --> REST : Notification sent
+  deactivate WebSocket
+  
+  REST --> UI : 200 OK\n{groupDetails}
+  deactivate REST
+  
+  UI --> Student : Display "Matched!\nJoined group: {name}"
+  deactivate UI
+
+else No Match Found
+  MatchingService --> REST : No suitable match
+  deactivate MatchingService
+  
+  REST -> GroupRepo : createNewGroup(userId, preferences)
+  activate GroupRepo
+  
+  GroupRepo -> DB : INSERT INTO groups
+  activate DB
+  DB --> GroupRepo : new group created
+  deactivate DB
+  
+  GroupRepo --> REST : New StudyGroup
+  deactivate GroupRepo
+  
+  REST --> UI : 201 Created\n{newGroupDetails}
+  deactivate REST
+  
+  UI --> Student : Display "New group created!\nWaiting for members..."
+  deactivate UI
+end
+
+note right of MatchingService
+  Compatibility Score Calculation:
+  - Skill level: 40%
+  - Schedule overlap: 30%
+  - Learning style: 20%
+  - Subject interest: 10%
+end note
+
+note right of WebSocket
+  Real-time notifications ensure
+  all group members receive
+  instant updates about new
+  members and activities
+end note
+
+@enduml

@@ -1,0 +1,40 @@
+@startuml CollaborationDiagram
+' Communication Diagram for Real-time Group Matching
+
+object ":Student" as student
+object ":UserController" as controller
+object ":MatchingService" as matching
+object ":GroupRepository" as groupRepo
+object ":UserRepository" as userRepo
+object ":WebSocketHandler" as websocket
+object ":StudyGroup" as group
+
+student -> controller : 1: requestGroupMatch(userId, preferences)
+controller -> matching : 2: findBestMatch(user)
+matching -> userRepo : 3: getUserProfile(userId)
+userRepo --> matching : 3.1: return userProfile
+matching -> groupRepo : 4: getAvailableGroups()
+groupRepo --> matching : 4.1: return groupList
+matching -> matching : 5: calculateCompatibility(user, groups)
+matching --> controller : 6: return matchedGroup
+controller -> group : 7: addMember(user)
+group --> controller : 7.1: return success
+controller -> websocket : 8: notifyGroupMembers(groupId, newMember)
+websocket -> group : 9: broadcast(message)
+controller --> student : 10: return groupDetails
+
+note right of matching
+  Matching algorithm considers:
+  - Skill level compatibility
+  - Schedule overlap
+  - Learning style match
+  - Subject alignment
+end note
+
+note bottom of websocket
+  Real-time updates ensure
+  all group members are
+  notified instantly
+end note
+
+@enduml

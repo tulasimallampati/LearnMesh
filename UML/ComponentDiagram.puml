@@ -1,0 +1,106 @@
+@startuml ComponentDiagram
+
+!define RECTANGLE rectangle
+
+package "Frontend Layer" {
+  [Web UI] as WebUI
+  [JavaScript Client] as JSClient
+  
+  WebUI -down-> JSClient
+}
+
+package "API Gateway" {
+  [REST Controller] as REST
+  [WebSocket Controller] as WSController
+}
+
+package "Service Layer" {
+  [User Service] as UserService
+  [Group Service] as GroupService
+  [Matching Service] as MatchingService
+  [Session Service] as SessionService
+  [Feedback Service] as FeedbackService
+  [Authentication Service] as AuthService
+}
+
+package "Data Access Layer" {
+  [User Repository] as UserRepo
+  [Group Repository] as GroupRepo
+  [Session Repository] as SessionRepo
+  [Feedback Repository] as FeedbackRepo
+}
+
+package "External Services" {
+  [WebSocket Handler] as WSHandler
+  [Email Service] as EmailService
+  [Notification Service] as NotificationService
+}
+
+database "SQL Database" {
+  [Users Table] as UsersDB
+  [Groups Table] as GroupsDB
+  [Sessions Table] as SessionsDB
+  [Feedback Table] as FeedbackDB
+}
+
+' Frontend to API Gateway
+JSClient --> REST : HTTP/HTTPS
+JSClient --> WSController : WebSocket Connection
+
+' API Gateway to Services
+REST --> UserService
+REST --> GroupService
+REST --> SessionService
+REST --> FeedbackService
+REST --> AuthService
+
+WSController --> GroupService
+WSController --> SessionService
+WSController ..> WSHandler : uses
+
+' Service to Service Dependencies
+GroupService --> MatchingService : uses
+GroupService --> NotificationService : uses
+UserService --> EmailService : uses
+SessionService --> NotificationService : uses
+FeedbackService --> GroupService : updates
+
+' Services to Data Access
+UserService --> UserRepo
+GroupService --> GroupRepo
+SessionService --> SessionRepo
+FeedbackService --> FeedbackRepo
+AuthService --> UserRepo
+
+' Data Access to Database
+UserRepo --> UsersDB
+GroupRepo --> GroupsDB
+SessionRepo --> SessionsDB
+FeedbackRepo --> FeedbackDB
+
+' WebSocket Handler to Frontend
+WSHandler ..> JSClient : Real-time Updates
+
+note right of MatchingService
+  Core algorithm component
+  - Skill-based matching
+  - Availability analysis
+  - Learning style compatibility
+end note
+
+note bottom of WSHandler
+  Manages real-time communication
+  - Group updates
+  - Session notifications
+  - Member activities
+end note
+
+note left of "SQL Database"
+  Persistent storage
+  - User profiles
+  - Group data
+  - Session history
+  - Feedback records
+end note
+
+@enduml

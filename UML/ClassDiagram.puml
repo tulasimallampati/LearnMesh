@@ -1,0 +1,145 @@
+@startuml ClassDiagram
+
+class User {
+  - userId: Long
+  - username: String
+  - email: String
+  - password: String
+  - skillLevel: SkillLevel
+  - learningStyle: LearningStyle
+  - availability: List<TimeSlot>
+  - createdAt: LocalDateTime
+  + register(): boolean
+  + login(username, password): boolean
+  + updateProfile(profile): void
+  + getRecommendations(): List<StudyGroup>
+}
+
+class UserProfile {
+  - profileId: Long
+  - user: User
+  - bio: String
+  - interests: List<String>
+  - achievements: List<String>
+  - rating: double
+  + update(data): void
+  + calculateCompatibility(other): double
+}
+
+class StudyGroup {
+  - groupId: Long
+  - groupName: String
+  - subject: String
+  - maxMembers: int
+  - currentMembers: int
+  - skillLevel: SkillLevel
+  - createdAt: LocalDateTime
+  - isActive: boolean
+  + addMember(user): boolean
+  + removeMember(user): void
+  + isFull(): boolean
+  + calculateAverageSkill(): double
+  + notifyMembers(message): void
+}
+
+class GroupMember {
+  - memberId: Long
+  - user: User
+  - group: StudyGroup
+  - joinedAt: LocalDateTime
+  - role: MemberRole
+  - contributionScore: int
+  + updateRole(role): void
+  + incrementContribution(): void
+}
+
+class MatchingService {
+  - algorithm: MatchingAlgorithm
+  + findBestMatch(user): StudyGroup
+  + createNewGroup(user): StudyGroup
+  + calculateCompatibility(user, group): double
+  - analyzeSkillGap(user, group): double
+  - checkScheduleOverlap(user, group): boolean
+}
+
+interface MatchingAlgorithm {
+  + match(user, groups): StudyGroup
+  + score(user, group): double
+}
+
+class SkillBasedMatcher {
+  + match(user, groups): StudyGroup
+  + score(user, group): double
+  - weightSkillLevel(): double
+  - weightLearningStyle(): double
+}
+
+class Session {
+  - sessionId: Long
+  - group: StudyGroup
+  - startTime: LocalDateTime
+  - endTime: LocalDateTime
+  - topic: String
+  - participants: List<User>
+  + start(): void
+  + end(): void
+  + addParticipant(user): void
+}
+
+class Feedback {
+  - feedbackId: Long
+  - user: User
+  - group: StudyGroup
+  - rating: int
+  - comment: String
+  - createdAt: LocalDateTime
+  + submit(): void
+}
+
+class WebSocketHandler {
+  - sessions: Map<Long, WebSocketSession>
+  + connect(userId): void
+  + disconnect(userId): void
+  + broadcast(groupId, message): void
+  + sendToUser(userId, message): void
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum LearningStyle {
+  VISUAL
+  AUDITORY
+  KINESTHETIC
+  READING_WRITING
+}
+
+enum MemberRole {
+  CREATOR
+  MODERATOR
+  MEMBER
+}
+
+' Relationships
+User "1" -- "1" UserProfile
+User "1" -- "*" GroupMember
+StudyGroup "1" -- "*" GroupMember
+StudyGroup "1" -- "*" Session
+User "*" -- "*" Session
+User "1" -- "*" Feedback
+StudyGroup "1" -- "*" Feedback
+MatchingService --> StudyGroup
+MatchingService --> User
+MatchingService o-- MatchingAlgorithm
+MatchingAlgorithm <|.. SkillBasedMatcher
+WebSocketHandler --> StudyGroup
+WebSocketHandler --> User
+User --> SkillLevel
+User --> LearningStyle
+GroupMember --> MemberRole
+
+@enduml

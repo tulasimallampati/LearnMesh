@@ -1,0 +1,56 @@
+@startuml ActivityDiagram
+|Student|
+start
+:Login to LearnMesh;
+:Update Profile Information;
+:Set Learning Preferences;
+note right
+  - Skill Level
+  - Availability
+  - Learning Style
+  - Subject Interests
+end note
+
+|System|
+:Collect User Data;
+:Analyze User Profile;
+
+if (Existing Groups Available?) then (yes)
+  :Run Matching Algorithm;
+  :Calculate Compatibility Scores;
+  
+  if (Good Match Found?) then (yes)
+    :Send Group Recommendation;
+    
+    |Student|
+    if (Accept Recommendation?) then (yes)
+      |System|
+      :Add User to Group;
+      :Send Real-time Notification via WebSocket;
+      
+      |Student|
+      :Join Group Session;
+      :Collaborate with Peers;
+      :Provide Feedback;
+      
+      |System|
+      :Update User Statistics;
+      :Adjust Matching Parameters;
+    else (no)
+      :Request New Match;
+      |System|
+      :Re-run Algorithm;
+    endif
+  else (no)
+    |System|
+    :Create New Group;
+    :Add User as First Member;
+    :Wait for More Members;
+  endif
+else (no)
+  :Create New Group;
+  :Set User as Group Creator;
+endif
+
+stop
+@enduml

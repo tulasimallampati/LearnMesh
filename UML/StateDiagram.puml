@@ -1,0 +1,84 @@
+@startuml StateDiagram
+
+[*] --> Creating : User initiates group
+
+state Creating {
+  [*] --> SettingParameters
+  SettingParameters : Set group name, subject
+  SettingParameters : Define skill level
+  SettingParameters : Set max members
+  SettingParameters --> Validating : Submit
+  Validating : Check parameters
+  Validating --> SettingParameters : Invalid
+  Validating --> [*] : Valid
+}
+
+Creating --> WaitingForMembers : Group created
+
+state WaitingForMembers {
+  [*] --> Searching
+  Searching : Running matching algorithm
+  Searching : Broadcasting availability
+  Searching --> AddingMember : Match found
+  AddingMember : Send invitation
+  AddingMember : Await acceptance
+  AddingMember --> Searching : Rejected
+  AddingMember --> [*] : Accepted
+  
+  note right of Searching
+    WebSocket notifications
+    sent to potential matches
+  end note
+}
+
+WaitingForMembers --> Active : Minimum members reached
+
+state Active {
+  [*] --> Scheduling
+  Scheduling : Plan sessions
+  Scheduling : Coordinate availability
+  Scheduling --> InSession : Session starts
+  
+  InSession : Members collaborating
+  InSession : Real-time interaction
+  InSession : Sharing resources
+  InSession --> Scheduling : Session ends
+  InSession --> CollectingFeedback : Request feedback
+  
+  CollectingFeedback : Gather member ratings
+  CollectingFeedback : Process comments
+  CollectingFeedback --> Scheduling : Feedback received
+  
+  Scheduling --> Idle : No upcoming sessions
+  Idle --> Scheduling : New session planned
+  Idle --> [*] : Inactivity timeout
+}
+
+Active --> Full : Maximum members reached
+Full --> Active : Member leaves
+
+Active --> Inactive : All members leave
+WaitingForMembers --> Inactive : Creator cancels
+Full --> Inactive : Disbanded
+
+state Inactive {
+  [*] --> ArchivingData
+  ArchivingData : Save session history
+  ArchivingData : Store feedback
+  ArchivingData : Calculate statistics
+  ArchivingData --> [*]
+}
+
+Inactive --> [*] : Archived
+
+note right of Active
+  Group can accept new members
+  if below maximum capacity
+end note
+
+note bottom of Inactive
+  Data retained for analytics
+  and user history
+end note
+
+@enduml
